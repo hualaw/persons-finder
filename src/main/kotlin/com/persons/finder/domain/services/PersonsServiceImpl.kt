@@ -1,31 +1,27 @@
 package com.persons.finder.domain.services
 
 import com.persons.finder.domain.events.PersonCreatedEvent
+import com.persons.finder.domain.model.Location
 import com.persons.finder.domain.model.Person
-import com.persons.finder.infrastructure.persistence.entity.LocationEntity
 import com.persons.finder.infrastructure.persistence.entity.PersonEntity
-import com.persons.finder.infrastructure.persistence.repository.LocationRepository
 import com.persons.finder.infrastructure.persistence.repository.PersonRepository
 import com.persons.finder.presentation.dto.CreatePersonRequest
 import com.persons.finder.presentation.dto.LocationDto
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.Coordinate
 
 @Service
 class PersonsServiceImpl(
     private val personRepository: PersonRepository,
-    private val locationRepository: LocationRepository,
-    private val eventPublisher: ApplicationEventPublisher,
-    private val geometryFactory: GeometryFactory
+    private val locationsService: LocationsService,
+    private val eventPublisher: ApplicationEventPublisher
 ) : PersonsService {
 
     override fun getById(id: Long): Person {
         val entity = personRepository.findById(id).orElseThrow { RuntimeException("Person not found") }
-        val locationEntity = locationRepository.findByPersonId(id)
-        val locationDto = locationEntity.map { LocationDto(it.latitude, it.longitude) }.orElse(null)
+        val location = locationsService.getByPersonId(id)
+        val locationDto = location?.let { LocationDto(it.latitude, it.longitude) }
 
         return Person(
             id = entity.id,
@@ -51,15 +47,12 @@ class PersonsServiceImpl(
         )
         val savedPerson = personRepository.save(personEntity)
 
-        val point = geometryFactory.createPoint(Coordinate(request.location.longitude, request.location.latitude))
-
-        val locationEntity = LocationEntity(
-            personId = savedPerson.id,
+        val location = Location(
+            referenceId = savedPerson.id,
             latitude = request.location.latitude,
-            longitude = request.location.longitude,
-            geom = point
+            longitude = request.location.longitude
         )
-        locationRepository.save(locationEntity)
+        locationsService.addLocation(location)
 
         eventPublisher.publishEvent(PersonCreatedEvent(savedPerson.id, request.jobTitle, request.hobbies))
 
@@ -79,34 +72,27 @@ class PersonsServiceImpl(
             throw RuntimeException("Person not found")
         }
 
-        val point = geometryFactory.createPoint(Coordinate(location.longitude, location.latitude))
-
-        val existingLocation = locationRepository.findByPersonId(personId)
-
-        val locationEntity = if (existingLocation.isPresent) {
-            existingLocation.get().copy(
-                latitude = location.latitude,
-                longitude = location.longitude,
-                geom = point
-            )
-        } else {
-            LocationEntity(
-                personId = personId,
-                latitude = location.latitude,
-                longitude = location.longitude,
-                geom = point
-            )
-        }
-
-        locationRepository.save(locationEntity)
+        val locationModel = Location(
+            referenceId = personId,
+            latitude = location.latitude,
+            longitude = location.longitude
+        )
+        locationsService.addLocation(locationModel)
     }
 
     override fun findNearby(latitude: Double, longitude: Double, radius: Double): List<Person> {
-        val locations = locationRepository.findNearby(latitude, longitude, radius)
-        val personIds = locations.map { it.personId }
+        // Convert radius from meters to km for LocationsService
+        val radiusInKm = radius / 1000.0
+        val locations = locationsService.findAround(latitude, longitude, radiusInKm)
+        
+        if (locations.isEmpty()) {
+            return emptyList()
+        }
+
+        val personIds = locations.map { it.referenceId }
         val persons = personRepository.findAllById(personIds)
 
-        val locationMap = locations.associateBy { it.personId }
+        val locationMap = locations.associateBy { it.referenceId }
 
         return persons.map { person ->
             val loc = locationMap[person.id]
