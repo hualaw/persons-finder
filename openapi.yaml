@@ -1,0 +1,145 @@
+openapi: 3.1.0
+info:
+  title: Persons Finder API
+  description: Backend API for the Persons Finder application (AI-Augmented Edition).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+paths:
+  /persons:
+    post:
+      summary: Create a new person
+      description: Creates a new person record. The system will generate a short, quirky bio based on the job title and hobbies using AI.
+      operationId: createPerson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePersonRequest'
+      responses:
+        '201':
+          description: Person created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '400':
+          description: "Invalid input. This can be due to invalid location data or forbidden content in 'jobTitle' or 'hobbies'."
+  /persons/{id}/location:
+    put:
+      summary: Update a person's location
+      description: Updates the latitude and longitude for a specific person.
+      operationId: updatePersonLocation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the person to update
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Location'
+      responses:
+        '200':
+          description: Location updated successfully
+        '400':
+          description: Invalid latitude or longitude
+        '404':
+          description: Person not found
+  /persons/nearby:
+    get:
+      summary: Find people nearby
+      description: Retrieves a list of persons within a specific radius of a query location, sorted by distance.
+      operationId: findPersonsNearby
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: longitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: radius
+          in: query
+          description: Search radius in kilometers (or meters, depending on implementation)
+          required: true
+          schema:
+            type: number
+            format: double
+      responses:
+        '200':
+          description: List of nearby persons found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Person'
+        '400':
+          description: Invalid latitude or longitude
+components:
+  schemas:
+    Location:
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+    CreatePersonRequest:
+      type: object
+      required:
+        - name
+        - jobTitle
+        - hobbies
+        - location
+      properties:
+        name:
+          type: string
+          example: "Alice Smith"
+        jobTitle:
+          type: string
+          example: "Software Engineer"
+        hobbies:
+          type: array
+          items:
+            type: string
+          example: ["Hiking", "Chess"]
+        location:
+          $ref: '#/components/schemas/Location'
+    Person:
+      allOf:
+        - $ref: '#/components/schemas/CreatePersonRequest'
+        - type: object
+          required:
+            - id
+            - bio
+          properties:
+            id:
+              type: string
+              format: uuid
+            bio:
+              type: string
+              description: AI-generated quirky bio
+              example: "A code-slinging chess grandmaster who debugs trails on the weekends."
