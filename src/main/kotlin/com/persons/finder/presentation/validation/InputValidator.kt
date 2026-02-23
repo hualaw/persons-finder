@@ -14,6 +14,16 @@ class InputValidator {
         return true
     }
 
+    fun validateLocation(latitude: Double, longitude: Double, radius: Double? = null): Boolean {
+        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+            return false
+        }
+        if (radius != null && radius <= 0) {
+            return false
+        }
+        return true
+    }
+
     private fun containsForbiddenKeywords(text: String): Boolean {
         return forbiddenKeywords.any { text.contains(it, ignoreCase = true) }
     }

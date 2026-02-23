@@ -27,6 +27,26 @@ paths:
                 $ref: '#/components/schemas/Person'
         '400':
           description: "Invalid input. This can be due to invalid location data or forbidden content in 'jobTitle' or 'hobbies'."
+  /persons/{id}:
+    get:
+      summary: Get a person by ID
+      operationId: getPerson
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Person found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '404':
+          description: Person not found
   /persons/{id}/location:
     put:
       summary: Update a person's location
@@ -38,8 +58,8 @@ paths:
           required: true
           description: The ID of the person to update
           schema:
-            type: string
-            format: uuid
+            type: integer
+            format: int64
       requestBody:
         required: true
         content:
@@ -78,6 +98,7 @@ paths:
           schema:
             type: number
             format: double
+            minimum: 0
       responses:
         '200':
           description: List of nearby persons found
@@ -137,8 +158,8 @@ components:
             - bio
           properties:
             id:
-              type: string
-              format: uuid
+              type: integer
+              format: int64
             bio:
               type: string
               description: AI-generated quirky bio
