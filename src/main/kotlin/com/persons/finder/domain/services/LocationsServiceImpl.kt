@@ -1,6 +1,6 @@
 package com.persons.finder.domain.services
 
-import com.persons.finder.data.Location
+import com.persons.finder.domain.model.Location
 import org.springframework.stereotype.Service
 
 @Service
