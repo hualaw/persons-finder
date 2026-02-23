@@ -32,7 +32,7 @@ class PersonsServiceImpl(
         val personEntity = PersonEntity(
             name = request.name,
             jobTitle = request.jobTitle,
-            hobbies = request.hobbies,
+            hobbies = request.hobbies.toTypedArray(),
             bio = "the default bio"
         )
         val savedPerson = personRepository.save(personEntity)

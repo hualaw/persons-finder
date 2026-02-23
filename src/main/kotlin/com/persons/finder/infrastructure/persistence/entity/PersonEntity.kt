@@ -17,6 +17,28 @@ data class PersonEntity(
         name = "hobbies",
         columnDefinition = "text[]"
     )
-    val hobbies: List<String> = emptyList(),
+    val hobbies: Array<String> = emptyArray(),
     var bio: String = ""
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is PersonEntity) return false
+
+        if (id != other.id) return false
+        if (name != other.name) return false
+        if (jobTitle != other.jobTitle) return false
+        if (!hobbies.contentEquals(other.hobbies)) return false
+        if (bio != other.bio) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + name.hashCode()
+        result = 31 * result + jobTitle.hashCode()
+        result = 31 * result + hobbies.contentHashCode()
+        result = 31 * result + bio.hashCode()
+        return result
+    }
+}
