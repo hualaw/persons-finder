@@ -2,8 +2,8 @@
 -- Run this with psql connected to the 'postgres' database.
 -- Example: psql -U hua -d postgres -f data.sql
 
-DROP DATABASE IF EXISTS personfinder;
-CREATE DATABASE personfinder;
+-- DROP DATABASE IF EXISTS personfinder;
+-- CREATE DATABASE personfinder;
 
 \c personfinder
 
@@ -30,3 +30,4 @@ CREATE TABLE locations (
 );
 
 CREATE INDEX idx_locations_geom ON locations USING GIST (geom);
+

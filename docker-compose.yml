@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:14-3.2
+    container_name: personfinder-db
+    environment:
+      POSTGRES_DB: personfinder
+      POSTGRES_USER: pfdbuser
+      POSTGRES_PASSWORD: pf_password_123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql # Mount init.sql to auto-execute
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pfdbuser -d personfinder"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: personfinder-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/personfinder
+      SPRING_DATASOURCE_USERNAME: pfdbuser
+      SPRING_DATASOURCE_PASSWORD: pf_password_123
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
