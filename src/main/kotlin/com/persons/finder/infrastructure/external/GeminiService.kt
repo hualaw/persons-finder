@@ -34,7 +34,7 @@ class GeminiService(
 
             Person's Data:
             - Job: "$jobTitle"
-            - Hobbies: "${hobbies.joinToString(", ")}"
+            - Hobbies: "${hobbies.joinToString(", ")}" 
 
             Bio:
         """.trimIndent()
@@ -66,15 +66,25 @@ class GeminiService(
             // Safely parse the nested JSON response
             val responseBody = response.body
             val candidates = responseBody?.get("candidates") as? List<*>
-            val firstCandidate = candidates?.firstOrNull() as? Map<*, *>
+            if (candidates == null) {
+                logger.warn("event=generateBio reason=no_candidates_in_response")
+                return getDefaultBio()
+            }
+
+            val firstCandidate = candidates.firstOrNull() as? Map<*, *>
             val content = firstCandidate?.get("content") as? Map<*, *>
             val parts = content?.get("parts") as? List<*>
             val firstPart = parts?.firstOrNull() as? Map<*, *>
             val bio = firstPart?.get("text") as? String
 
-            bio ?: getDefaultBio()
+            if (bio.isNullOrBlank()) {
+                logger.warn("event=generateBio reason=empty_bio_returned")
+                getDefaultBio()
+            } else {
+                bio
+            }
         } catch (e: Exception) {
-            logger.error("Error calling Gemini API: ${e.message}", e)
+            logger.error("event=generateBio error={}", e.message)
             getDefaultBio()
         }
     }
