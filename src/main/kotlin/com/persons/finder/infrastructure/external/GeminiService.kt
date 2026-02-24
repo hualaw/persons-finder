@@ -12,11 +12,12 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory
 
 @Service
 class GeminiService(
-    private val geminiProperties: GeminiProperties
+    private val geminiProperties: GeminiProperties,
+    restTemplate: RestTemplate? = null
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    private val restTemplate: RestTemplate by lazy {
+    private val restTemplate: RestTemplate = restTemplate ?: run {
         val factory = SimpleClientHttpRequestFactory()
         factory.setConnectTimeout(geminiProperties.timeout.toMillis().toInt())
         factory.setReadTimeout(geminiProperties.timeout.toMillis().toInt())
