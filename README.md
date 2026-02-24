@@ -9,6 +9,12 @@ A Spring Boot application that helps you manage person profiles and find people 
 *   **Find Nearby**: Find all people within a specific radius (in meters) of a given location.
 *   **Geospatial Support**: Uses PostgreSQL with PostGIS for efficient spatial indexing and querying.
 
+## To-do List
+*   **Improve the security, including SQL Injection, Prompt Injection and PII privacy protection**;
+*   **Secure the endpoint by JWT Token**
+*   **Analyse the detail time consumption of /nearby and optimize the performance**
+*   **Deploy the application in AWS, verify the horizonal scalability and performance**
+
 ## Prerequisites
 
 *   [Docker](https://www.docker.com/get-started)
@@ -101,3 +107,28 @@ Finds people within a specified radius (in meters).
     ```bash
     curl "http://localhost:8080/api/v1/persons/nearby?latitude=40.7128&longitude=-74.0060&radius=5000"
     ```
+
+## Benchmark: populate 1,000,000 records and run nearby benchmark
+
+1) Populate the database (runs SQL script in `database/populate_1m.sql`):
+
+```bash
+# Connect to your postgres server where database 'personfinder' exists
+psql -U hua -d personfinder -f database/populate_1m.sql
+```
+
+Notes:
+- The script truncates `persons` and `locations` and recreates the spatial index.
+- You can adjust the bounding box and number of rows at the top of the SQL file.
+
+2) Run the k6 benchmark (install k6: https://k6.io/docs/getting-started/installation/):
+
+```bash
+# Default base URL is http://localhost:8080; set BASE_URL env var to change
+BASE_URL=http://localhost:8080 k6 run --vus 50 --duration 30s benchmark/nearby_benchmark.js
+```
+
+3) Tips for accurate benchmarking
+- Run the populate script, then warm up caches (run a few sample queries) before running k6.
+- For large imports, ensure the DB has sufficient memory and that PostGIS is enabled.
+- Monitor DB CPU, disk IO, and query plan (EXPLAIN ANALYZE) for slow queries.
